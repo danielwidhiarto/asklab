@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "191027756423",
+    "project_id": "asklab-56d38",
+    "storage_bucket": "asklab-56d38.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:191027756423:android:e57609c13b7881e41ce722",
+        "android_client_info": {
+          "package_name": "com.example.asklab"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB4RraiCj3kbuszpYeuHHGb0ATQRKlM734"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
