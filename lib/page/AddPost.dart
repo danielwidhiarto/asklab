@@ -7,7 +7,9 @@ class AddPost extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Add Topic'),
+        title: const Text('Add Post'),
+        backgroundColor:
+            const Color(0xFF009ADB), // Set the appbar color to specified blue
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
