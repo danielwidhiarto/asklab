@@ -38,7 +38,6 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Home')),
       body: _pages[_currentIndex], // Display the selected page/fragment
       floatingActionButton: FloatingActionButton(
         onPressed: () {
