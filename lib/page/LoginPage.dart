@@ -1,4 +1,5 @@
-import 'package:asklab/page/RegisterPage.dart';
+import 'package:asklab/page/HomePage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class LoginPage extends StatefulWidget {
@@ -10,7 +11,9 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   bool _obscureText = true; // For password visibility toggle
-  bool _isButtonHovered = false; // For button hover animation
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _auth = FirebaseAuth.instance;
 
   // Toggle password visibility
   void _togglePasswordVisibility() {
@@ -19,36 +22,48 @@ class _LoginPageState extends State<LoginPage> {
     });
   }
 
-  // Handle button hover animation
-  void _onButtonHover(bool isHovered) {
-    setState(() {
-      _isButtonHovered = isHovered;
-    });
+  // Login method
+  Future<void> _loginUser() async {
+    try {
+      // Attempt to sign in with email and password
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
+
+      // If login is successful, navigate to HomePage
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomePage()),
+      );
+    } on FirebaseAuthException catch (e) {
+      // Handle errors
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.message ?? 'Error')));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF009ADB), // Updated background color
+      backgroundColor: const Color(0xFF009ADB),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // App Name or Logo
               const Text(
                 'AskLab',
                 style: TextStyle(
-                  fontFamily: 'Arial',
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white),
               ),
               const SizedBox(height: 40),
-              // Username Field
+              // Email Field
               TextField(
+                controller: _emailController,
                 style: const TextStyle(color: Colors.black),
                 decoration: InputDecoration(
                   hintText: 'Email',
@@ -59,16 +74,17 @@ class _LoginPageState extends State<LoginPage> {
                     borderRadius: BorderRadius.circular(8.0),
                     borderSide: BorderSide.none,
                   ),
-                  prefixIcon: const Icon(Icons.person, color: Colors.black54),
+                  prefixIcon: const Icon(Icons.email, color: Colors.black54),
                 ),
               ),
               const SizedBox(height: 16),
-              // Password Field
+              // Password Field with Toggle Visibility
               TextField(
+                controller: _passwordController,
+                obscureText: _obscureText,
                 style: const TextStyle(color: Colors.black),
-                obscureText: _obscureText, // Toggle password visibility
                 decoration: InputDecoration(
-                  hintText: 'Password', // Disappears when typing
+                  hintText: 'Password',
                   hintStyle: const TextStyle(color: Colors.black54),
                   filled: true,
                   fillColor: Colors.white,
@@ -82,88 +98,34 @@ class _LoginPageState extends State<LoginPage> {
                       _obscureText ? Icons.visibility_off : Icons.visibility,
                       color: Colors.black54,
                     ),
-                    onPressed: _togglePasswordVisibility, // Toggle visibility
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () {
-                    // Handle forgotten password
-                  },
-                  child: const Text(
-                    'Forgotten password?',
-                    style: TextStyle(color: Colors.white),
+                    onPressed: _togglePasswordVisibility,
                   ),
                 ),
               ),
               const SizedBox(height: 20),
-              // Login Button with hover animation
+              // Login Button
               MouseRegion(
-                onEnter: (_) => _onButtonHover(true),
-                onExit: (_) => _onButtonHover(false),
+                onEnter: (_) {},
+                onExit: (_) {},
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
                   width: double.infinity,
                   height: 50,
                   decoration: BoxDecoration(
-                    color: _isButtonHovered
-                        ? const Color(0xFF007BB6) // Darker blue on hover
-                        : Colors.white,
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(8.0),
                   ),
                   child: TextButton(
-                    onPressed: () {
-                      // Handle login action
-                    },
+                    onPressed: _loginUser,
                     child: const Text(
-                      'Log In',
+                      'Login',
                       style: TextStyle(fontSize: 16, color: Color(0xFF009ADB)),
                     ),
                   ),
                 ),
               ),
               const SizedBox(height: 20),
-              Row(
-                children: const [
-                  Expanded(
-                    child: Divider(
-                      color: Colors.white,
-                      thickness: 0.5,
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 10),
-                    child: Text(
-                      'OR',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                  Expanded(
-                    child: Divider(
-                      color: Colors.white,
-                      thickness: 0.5,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              // Log in with Microsoft
-              TextButton.icon(
-                onPressed: () {
-                  // Handle login with Microsoft
-                },
-                icon: const Icon(Icons.email, color: Colors.white),
-                label: const Text(
-                  'Log in with Microsoft',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-              const SizedBox(height: 30),
-              // Sign Up Link
+              // Register Link
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -173,12 +135,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   TextButton(
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const RegisterPage(),
-                        ),
-                      );
+                      Navigator.pushNamed(context, '/register');
                     },
                     child: const Text(
                       'Sign Up',
