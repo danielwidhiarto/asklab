@@ -15,6 +15,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final _passwordController = TextEditingController();
   final _auth = FirebaseAuth.instance;
   final _firestore = FirebaseFirestore.instance;
+  String _domain = 'binus.edu'; // Default domain
 
   // Toggle password visibility
   void _togglePasswordVisibility() {
@@ -23,19 +24,29 @@ class _RegisterPageState extends State<RegisterPage> {
     });
   }
 
+  // Toggle email domain between @binus.edu and @binus.ac.id
+  void _toggleDomain() {
+    setState(() {
+      _domain = _domain == 'binus.edu' ? 'binus.ac.id' : 'binus.edu';
+    });
+  }
+
   // Register User
   Future<void> _registerUser() async {
     try {
+      // Get the email input from the user (without domain)
+      String email = _emailController.text.trim() + '@$_domain';
+
       // Create user with email and password
       UserCredential userCredential =
           await _auth.createUserWithEmailAndPassword(
-        email: _emailController.text,
+        email: email, // Use the modified email with domain
         password: _passwordController.text,
       );
 
       // Add user to Firestore
       await _firestore.collection('users').doc(userCredential.user?.uid).set({
-        'email': _emailController.text,
+        'email': email, // Store the email with the selected domain in Firestore
         'createdAt': FieldValue.serverTimestamp(),
       });
 
@@ -56,6 +67,7 @@ class _RegisterPageState extends State<RegisterPage> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const Text(
@@ -66,44 +78,65 @@ class _RegisterPageState extends State<RegisterPage> {
                     color: Colors.white),
               ),
               const SizedBox(height: 40),
-              // Email Field
-              TextField(
-                controller: _emailController,
-                style: const TextStyle(color: Colors.black),
-                decoration: InputDecoration(
-                  hintText: 'Email',
-                  hintStyle: const TextStyle(color: Colors.black54),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8.0),
-                    borderSide: BorderSide.none,
+              // Email Field (user only inputs the part before @)
+              Container(
+                width: double.infinity, // Ensure it takes full width
+                child: TextField(
+                  controller: _emailController,
+                  style: const TextStyle(color: Colors.black),
+                  decoration: InputDecoration(
+                    hintText: 'Email',
+                    hintStyle: const TextStyle(color: Colors.black54),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8.0),
+                      borderSide: BorderSide.none,
+                    ),
+                    prefixIcon: const Icon(Icons.email, color: Colors.black54),
+                    suffixIcon: GestureDetector(
+                      onTap: _toggleDomain, // Toggle domain on tap
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 12.0),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '@$_domain', // Show dynamic domain
+                              style: const TextStyle(color: Colors.black54),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-                  prefixIcon: const Icon(Icons.email, color: Colors.black54),
                 ),
               ),
               const SizedBox(height: 16),
               // Password Field with Toggle Visibility
-              TextField(
-                controller: _passwordController,
-                obscureText: _obscureText,
-                style: const TextStyle(color: Colors.black),
-                decoration: InputDecoration(
-                  hintText: 'Password',
-                  hintStyle: const TextStyle(color: Colors.black54),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8.0),
-                    borderSide: BorderSide.none,
-                  ),
-                  prefixIcon: const Icon(Icons.lock, color: Colors.black54),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscureText ? Icons.visibility_off : Icons.visibility,
-                      color: Colors.black54,
+              Container(
+                width: double.infinity, // Ensure it takes full width
+                child: TextField(
+                  controller: _passwordController,
+                  obscureText: _obscureText,
+                  style: const TextStyle(color: Colors.black),
+                  decoration: InputDecoration(
+                    hintText: 'Password',
+                    hintStyle: const TextStyle(color: Colors.black54),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8.0),
+                      borderSide: BorderSide.none,
                     ),
-                    onPressed: _togglePasswordVisibility,
+                    prefixIcon: const Icon(Icons.lock, color: Colors.black54),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscureText ? Icons.visibility_off : Icons.visibility,
+                        color: Colors.black54,
+                      ),
+                      onPressed: _togglePasswordVisibility,
+                    ),
                   ),
                 ),
               ),
@@ -114,7 +147,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 onExit: (_) {},
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
-                  width: double.infinity,
+                  width: double.infinity, // Ensure it takes full width
                   height: 50,
                   decoration: BoxDecoration(
                     color: Colors.white,
