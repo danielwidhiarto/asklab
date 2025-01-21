@@ -16,12 +16,6 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
 
-  // Method to handle the logout action
-  Future<void> _logout(BuildContext context) async {
-    await FirebaseAuth.instance.signOut();
-    Navigator.pop(context); // Go back to the login page
-  }
-
   // List of fragments for navigation
   final List<Widget> _pages = [
     const FeedsFragment(),
