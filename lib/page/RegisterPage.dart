@@ -1,3 +1,5 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -8,7 +10,11 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
-  bool _obscureText = true; // For password visibility toggle
+  bool _obscureText = true;
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _auth = FirebaseAuth.instance;
+  final _firestore = FirebaseFirestore.instance;
 
   // Toggle password visibility
   void _togglePasswordVisibility() {
@@ -17,10 +23,35 @@ class _RegisterPageState extends State<RegisterPage> {
     });
   }
 
+  // Register User
+  Future<void> _registerUser() async {
+    try {
+      // Create user with email and password
+      UserCredential userCredential =
+          await _auth.createUserWithEmailAndPassword(
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
+
+      // Add user to Firestore
+      await _firestore.collection('users').doc(userCredential.user?.uid).set({
+        'email': _emailController.text,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      // Navigate to login page or home page
+      Navigator.pop(context);
+    } on FirebaseAuthException catch (e) {
+      // Handle errors
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.message ?? 'Error')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF009ADB), // Background color
+      backgroundColor: const Color(0xFF009ADB),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
@@ -28,16 +59,16 @@ class _RegisterPageState extends State<RegisterPage> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const Text(
-                'AskLab', // Title of the app
+                'AskLab',
                 style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white),
               ),
               const SizedBox(height: 40),
               // Email Field
               TextField(
+                controller: _emailController,
                 style: const TextStyle(color: Colors.black),
                 decoration: InputDecoration(
                   hintText: 'Email',
@@ -54,8 +85,9 @@ class _RegisterPageState extends State<RegisterPage> {
               const SizedBox(height: 16),
               // Password Field with Toggle Visibility
               TextField(
+                controller: _passwordController,
+                obscureText: _obscureText,
                 style: const TextStyle(color: Colors.black),
-                obscureText: _obscureText, // Toggle password visibility
                 decoration: InputDecoration(
                   hintText: 'Password',
                   hintStyle: const TextStyle(color: Colors.black54),
@@ -76,14 +108,10 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
               ),
               const SizedBox(height: 20),
-              // Register Button with Hover Effect
+              // Register Button
               MouseRegion(
-                onEnter: (_) {
-                  // Optional: Change hover effect
-                },
-                onExit: (_) {
-                  // Optional: Reset hover effect
-                },
+                onEnter: (_) {},
+                onExit: (_) {},
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   width: double.infinity,
@@ -93,9 +121,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     borderRadius: BorderRadius.circular(8.0),
                   ),
                   child: TextButton(
-                    onPressed: () {
-                      // Handle registration action
-                    },
+                    onPressed: _registerUser,
                     child: const Text(
                       'Register',
                       style: TextStyle(fontSize: 16, color: Color(0xFF009ADB)),
