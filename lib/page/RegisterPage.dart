@@ -79,10 +79,16 @@ class _RegisterPageState extends State<RegisterPage> {
         password: _passwordController.text,
       );
 
-      // Add user to Firestore
+      // Add user to Firestore with additional null attributes
       await _firestore.collection('users').doc(userCredential.user?.uid).set({
         'email': email,
         'username': username,
+        'fullName': null,
+        'profilePicture': null,
+        'bio': null,
+        'followersCount': 0,
+        'followingCount': 0,
+        'postCount': 0,
         'createdAt': FieldValue.serverTimestamp(),
       });
 
