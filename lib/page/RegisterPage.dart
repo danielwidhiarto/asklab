@@ -11,6 +11,8 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   bool _obscureText = true;
+  final _usernameController =
+      TextEditingController(); // Controller for username
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _auth = FirebaseAuth.instance;
@@ -34,26 +36,59 @@ class _RegisterPageState extends State<RegisterPage> {
   // Register User
   Future<void> _registerUser() async {
     try {
-      // Get the email input from the user (without domain)
       String email = _emailController.text.trim() + '@$_domain';
+      String username = _usernameController.text.trim();
+
+      // Check if username or email is empty
+      if (username.isEmpty || email.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Username and email cannot be empty')),
+        );
+        return;
+      }
+
+      // Validate username and email uniqueness
+      QuerySnapshot existingUsers = await _firestore
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .get();
+
+      QuerySnapshot existingUsernames = await _firestore
+          .collection('users')
+          .where('username', isEqualTo: username)
+          .get();
+
+      if (existingUsers.docs.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Email is already registered')),
+        );
+        return;
+      }
+
+      if (existingUsernames.docs.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Username is already taken')),
+        );
+        return;
+      }
 
       // Create user with email and password
       UserCredential userCredential =
           await _auth.createUserWithEmailAndPassword(
-        email: email, // Use the modified email with domain
+        email: email,
         password: _passwordController.text,
       );
 
       // Add user to Firestore
       await _firestore.collection('users').doc(userCredential.user?.uid).set({
-        'email': email, // Store the email with the selected domain in Firestore
+        'email': email,
+        'username': username,
         'createdAt': FieldValue.serverTimestamp(),
       });
 
       // Navigate to login page or home page
       Navigator.pop(context);
     } on FirebaseAuthException catch (e) {
-      // Handle errors
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(e.message ?? 'Error')));
     }
@@ -78,9 +113,29 @@ class _RegisterPageState extends State<RegisterPage> {
                     color: Colors.white),
               ),
               const SizedBox(height: 40),
-              // Email Field (user only inputs the part before @)
+              // Username Field
               Container(
-                width: double.infinity, // Ensure it takes full width
+                width: double.infinity,
+                child: TextField(
+                  controller: _usernameController,
+                  style: const TextStyle(color: Colors.black),
+                  decoration: InputDecoration(
+                    hintText: 'Username',
+                    hintStyle: const TextStyle(color: Colors.black54),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8.0),
+                      borderSide: BorderSide.none,
+                    ),
+                    prefixIcon: const Icon(Icons.person, color: Colors.black54),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Email Field
+              Container(
+                width: double.infinity,
                 child: TextField(
                   controller: _emailController,
                   style: const TextStyle(color: Colors.black),
@@ -95,14 +150,14 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     prefixIcon: const Icon(Icons.email, color: Colors.black54),
                     suffixIcon: GestureDetector(
-                      onTap: _toggleDomain, // Toggle domain on tap
+                      onTap: _toggleDomain,
                       child: Padding(
                         padding: const EdgeInsets.only(right: 12.0),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              '@$_domain', // Show dynamic domain
+                              '@$_domain',
                               style: const TextStyle(color: Colors.black54),
                             ),
                           ],
@@ -113,9 +168,9 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
               ),
               const SizedBox(height: 16),
-              // Password Field with Toggle Visibility
+              // Password Field
               Container(
-                width: double.infinity, // Ensure it takes full width
+                width: double.infinity,
                 child: TextField(
                   controller: _passwordController,
                   obscureText: _obscureText,
@@ -147,7 +202,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 onExit: (_) {},
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
-                  width: double.infinity, // Ensure it takes full width
+                  width: double.infinity,
                   height: 50,
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -163,7 +218,6 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
               ),
               const SizedBox(height: 20),
-              // Legal Text: Privacy Policy & Terms
               const Text(
                 'By signing up, you agree to our ',
                 style: TextStyle(color: Colors.white),
@@ -196,13 +250,11 @@ class _RegisterPageState extends State<RegisterPage> {
                 ],
               ),
               const SizedBox(height: 20),
-              // Divider
               const Divider(
                 color: Colors.white,
                 thickness: 0.5,
               ),
               const SizedBox(height: 20),
-              // Sign Up Link - Already have an account
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -212,7 +264,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                   TextButton(
                     onPressed: () {
-                      Navigator.pop(context); // Go back to login page
+                      Navigator.pop(context);
                     },
                     child: const Text(
                       'Login',
