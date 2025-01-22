@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:asklab/page/fragments/FeedsFragment.dart'; // Import Fragments
 import 'package:asklab/page/fragments/ExploreFragment.dart';
-import 'package:asklab/page/fragments/NotificationsFragment.dart';
+import 'package:asklab/page/fragments/DMFragment.dart'; // Updated to DM fragment
 import 'package:asklab/page/fragments/ProfileFragment.dart';
 
 class HomePage extends StatefulWidget {
@@ -21,7 +21,7 @@ class _HomePageState extends State<HomePage> {
     const FeedsFragment(),
     const ExploreFragment(),
     const SizedBox(), // Placeholder for floating action button
-    const NotificationsFragment(),
+    const DMFragment(), // Changed from NotificationsFragment to DMFragment
     const ProfileFragment(),
   ];
 
@@ -71,8 +71,9 @@ class _HomePageState extends State<HomePage> {
             backgroundColor: Colors.transparent, // Make it invisible
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.notifications, color: Colors.grey),
-            label: 'Notifications',
+            icon: Icon(Icons.message,
+                color: Colors.grey), // Updated to message icon
+            label: 'DM',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person, color: Colors.grey),
