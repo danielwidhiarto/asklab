@@ -9,6 +9,27 @@ class FeedsFragment extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Feed'),
         backgroundColor: const Color(0xFF009ADB),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications),
+            onPressed: () {
+              // Add logic to navigate to Notifications page or dialog
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Notifications'),
+                  content: const Text('No new notifications.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Close'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(16.0),
