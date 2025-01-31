@@ -50,7 +50,7 @@ class _ProfileFragmentState extends State<ProfileFragment> {
   Future<void> _logout() async {
     await _auth.signOut();
     Navigator.pushReplacementNamed(
-        context, '/login'); // Navigate to login page after logout
+        context, '/'); // Navigate to login page after logout
   }
 
   @override
