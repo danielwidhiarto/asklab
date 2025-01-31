@@ -1,20 +1,60 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../EditProfilePage.dart'; // Import Edit Profile Page
 
-class ProfileFragment extends StatelessWidget {
+class ProfileFragment extends StatefulWidget {
   const ProfileFragment({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    // Data contoh, nanti bisa diubah sesuai data dari backend
-    String? fullName = "John Doe";
-    String username = "test";
-    String? bio = "This is a sample bio!";
-    String? profilePicture = 'assets/profile_picture.png';
-    int postCount = 20;
-    int followersCount = 4400000;
-    int followingCount = 2100;
+  _ProfileFragmentState createState() => _ProfileFragmentState();
+}
 
+class _ProfileFragmentState extends State<ProfileFragment> {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  String? fullName;
+  String? username;
+  String? bio;
+  String? profilePicture;
+  int postCount = 0;
+  int followersCount = 0;
+  int followingCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    User? user = _auth.currentUser;
+    if (user != null) {
+      DocumentSnapshot userDoc =
+          await _firestore.collection('users').doc(user.uid).get();
+      if (userDoc.exists) {
+        setState(() {
+          fullName = userDoc['fullName'];
+          username = userDoc['username'];
+          bio = userDoc['bio'];
+          profilePicture = userDoc['profilePicture'];
+          postCount = userDoc['postCount'];
+          followersCount = userDoc['followersCount'];
+          followingCount = userDoc['followingCount'];
+        });
+      }
+    }
+  }
+
+  Future<void> _logout() async {
+    await _auth.signOut();
+    Navigator.pushReplacementNamed(
+        context, '/login'); // Navigate to login page after logout
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profile'),
@@ -29,7 +69,7 @@ class ProfileFragment extends StatelessWidget {
             CircleAvatar(
               radius: 50,
               backgroundImage: profilePicture != null
-                  ? AssetImage(profilePicture) as ImageProvider
+                  ? NetworkImage(profilePicture!) as ImageProvider
                   : const AssetImage('assets/profile_picture.png'),
             ),
 
@@ -38,7 +78,7 @@ class ProfileFragment extends StatelessWidget {
             // Full Name
             if (fullName != null)
               Text(
-                fullName,
+                fullName!,
                 style:
                     const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
@@ -53,7 +93,7 @@ class ProfileFragment extends StatelessWidget {
                 children: [
                   // Username
                   Text(
-                    '@$username',
+                    '@${username ?? "username"}',
                     style: const TextStyle(fontSize: 16, color: Colors.grey),
                   ),
 
@@ -114,9 +154,7 @@ class ProfileFragment extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 OutlinedButton.icon(
-                  onPressed: () {
-                    // Aksi Logout
-                  },
+                  onPressed: _logout,
                   icon: const Icon(Icons.logout,
                       size: 18, color: Color(0xFF009ADB)),
                   label: const Text("Logout",
