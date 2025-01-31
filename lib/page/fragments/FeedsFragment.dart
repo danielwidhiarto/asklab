@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../NotificationPage.dart'; // Import the NotificationPage
 
 class FeedsFragment extends StatelessWidget {
   const FeedsFragment({Key? key}) : super(key: key);
@@ -13,18 +14,11 @@ class FeedsFragment extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.notifications),
             onPressed: () {
-              // Add logic to navigate to Notifications page or dialog
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Notifications'),
-                  content: const Text('No new notifications.'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Close'),
-                    ),
-                  ],
+              // Navigate to NotificationPage
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const NotificationPage(),
                 ),
               );
             },
