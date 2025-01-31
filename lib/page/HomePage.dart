@@ -73,7 +73,7 @@ class _HomePageState extends State<HomePage> {
           BottomNavigationBarItem(
             icon: Icon(Icons.message,
                 color: Colors.grey), // Updated to message icon
-            label: 'DM',
+            label: 'Message',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person, color: Colors.grey),
