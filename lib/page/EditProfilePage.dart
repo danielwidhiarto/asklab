@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 
@@ -14,6 +16,29 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _bioController = TextEditingController();
   File? _profileImage;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    User? user = _auth.currentUser;
+    if (user != null) {
+      DocumentSnapshot userDoc =
+          await _firestore.collection('users').doc(user.uid).get();
+      if (userDoc.exists) {
+        setState(() {
+          _usernameController.text = userDoc['username'] ?? '';
+          _fullNameController.text = userDoc['fullName'] ?? '';
+          _bioController.text = userDoc['bio'] ?? '';
+        });
+      }
+    }
+  }
 
   Future<void> _pickImage() async {
     final pickedFile =
@@ -22,6 +47,20 @@ class _EditProfilePageState extends State<EditProfilePage> {
       setState(() {
         _profileImage = File(pickedFile.path);
       });
+    }
+  }
+
+  Future<void> _saveChanges() async {
+    User? user = _auth.currentUser;
+    if (user != null) {
+      await _firestore.collection('users').doc(user.uid).update({
+        'username': _usernameController.text.trim(),
+        'fullName': _fullNameController.text.trim(),
+        'bio': _bioController.text.trim(),
+      });
+
+      // Navigate back to profile page
+      Navigator.pop(context);
     }
   }
 
@@ -78,9 +117,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
+                    onPressed: _saveChanges,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF009ADB),
                       foregroundColor: Colors.white,
@@ -124,7 +161,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       controller: controller,
       maxLines: maxLines,
       decoration: InputDecoration(
-        prefixIcon: Icon(icon, color: Color(0xFF009ADB)),
+        prefixIcon: Icon(icon, color: const Color(0xFF009ADB)),
         labelText: label,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
       ),
