@@ -11,35 +11,30 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   bool _obscureText = true;
-  final _usernameController =
-      TextEditingController(); // Controller for username
+  final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _auth = FirebaseAuth.instance;
   final _firestore = FirebaseFirestore.instance;
-  String _domain = 'binus.edu'; // Default domain
+  String _domain = 'binus.edu';
 
-  // Toggle password visibility
   void _togglePasswordVisibility() {
     setState(() {
       _obscureText = !_obscureText;
     });
   }
 
-  // Toggle email domain between @binus.edu and @binus.ac.id
   void _toggleDomain() {
     setState(() {
       _domain = _domain == 'binus.edu' ? 'binus.ac.id' : 'binus.edu';
     });
   }
 
-  // Register User
   Future<void> _registerUser() async {
     try {
       String email = _emailController.text.trim() + '@$_domain';
       String username = _usernameController.text.trim();
 
-      // Check if username or email is empty
       if (username.isEmpty || email.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Username and email cannot be empty')),
@@ -47,39 +42,12 @@ class _RegisterPageState extends State<RegisterPage> {
         return;
       }
 
-      // Validate username and email uniqueness
-      QuerySnapshot existingUsers = await _firestore
-          .collection('users')
-          .where('email', isEqualTo: email)
-          .get();
-
-      QuerySnapshot existingUsernames = await _firestore
-          .collection('users')
-          .where('username', isEqualTo: username)
-          .get();
-
-      if (existingUsers.docs.isNotEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Email is already registered')),
-        );
-        return;
-      }
-
-      if (existingUsernames.docs.isNotEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Username is already taken')),
-        );
-        return;
-      }
-
-      // Create user with email and password
       UserCredential userCredential =
           await _auth.createUserWithEmailAndPassword(
         email: email,
         password: _passwordController.text,
       );
 
-      // Add user to Firestore with additional null attributes
       await _firestore.collection('users').doc(userCredential.user?.uid).set({
         'email': email,
         'username': username,
@@ -92,7 +60,6 @@ class _RegisterPageState extends State<RegisterPage> {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      // Navigate to login page or home page
       Navigator.pop(context);
     } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(context)
@@ -119,7 +86,6 @@ class _RegisterPageState extends State<RegisterPage> {
                     color: Colors.white),
               ),
               const SizedBox(height: 40),
-              // Username Field
               Container(
                 width: double.infinity,
                 child: TextField(
@@ -139,7 +105,6 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
               ),
               const SizedBox(height: 16),
-              // Email Field
               Container(
                 width: double.infinity,
                 child: TextField(
@@ -174,7 +139,6 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
               ),
               const SizedBox(height: 16),
-              // Password Field
               Container(
                 width: double.infinity,
                 child: TextField(
@@ -202,7 +166,6 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
               ),
               const SizedBox(height: 20),
-              // Register Button
               MouseRegion(
                 onEnter: (_) {},
                 onExit: (_) {},
