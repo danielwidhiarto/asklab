@@ -11,34 +11,40 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  bool _obscureText = true; // For password visibility toggle
+  bool _obscureText = true;
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _auth = FirebaseAuth.instance;
+  String _domain = 'binus.edu'; // Menambahkan variable domain
 
-  // Toggle password visibility
   void _togglePasswordVisibility() {
     setState(() {
       _obscureText = !_obscureText;
     });
   }
 
-  // Login method
+  // Menambahkan fungsi toggle domain
+  void _toggleDomain() {
+    setState(() {
+      _domain = _domain == 'binus.edu' ? 'binus.ac.id' : 'binus.edu';
+    });
+  }
+
   Future<void> _loginUser() async {
     try {
-      // Attempt to sign in with email and password
+      // Menggabungkan email dengan domain
+      String email = _emailController.text.trim() + '@$_domain';
+
       UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-        email: _emailController.text,
+        email: email,
         password: _passwordController.text,
       );
 
-      // If login is successful, navigate to HomePage
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const HomePage()),
       );
     } on FirebaseAuthException catch (e) {
-      // Handle errors
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(e.message ?? 'Error')));
     }
@@ -62,7 +68,7 @@ class _LoginPageState extends State<LoginPage> {
                     color: Colors.white),
               ),
               const SizedBox(height: 40),
-              // Email Field
+              // Email Field dengan domain toggle
               TextField(
                 controller: _emailController,
                 style: const TextStyle(color: Colors.black),
@@ -76,10 +82,24 @@ class _LoginPageState extends State<LoginPage> {
                     borderSide: BorderSide.none,
                   ),
                   prefixIcon: const Icon(Icons.email, color: Colors.black54),
+                  suffixIcon: GestureDetector(
+                    onTap: _toggleDomain,
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 12.0),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '@$_domain',
+                            style: const TextStyle(color: Colors.black54),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
-              // Password Field with Toggle Visibility
               TextField(
                 controller: _passwordController,
                 obscureText: _obscureText,
@@ -104,7 +124,6 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
               const SizedBox(height: 20),
-              // Login Button
               MouseRegion(
                 onEnter: (_) {},
                 onExit: (_) {},
@@ -126,7 +145,6 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
               const SizedBox(height: 20),
-              // Register Link
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
