@@ -18,14 +18,15 @@ class _ProfileFragmentState extends State<ProfileFragment> {
   String? username;
   String? bio;
   String? profilePicture;
-  int postCount = 0;
   int followersCount = 0;
   int followingCount = 0;
+  int postCount = 0;
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
+    _fetchPostCount(); // Ambil jumlah post dari Firestore
   }
 
   Future<void> _loadUserData() async {
@@ -39,12 +40,26 @@ class _ProfileFragmentState extends State<ProfileFragment> {
           username = userDoc['username'];
           bio = userDoc['bio'];
           profilePicture = userDoc['profilePicture'];
-          postCount = userDoc['postCount'];
           followersCount = userDoc['followersCount'];
           followingCount = userDoc['followingCount'];
         });
       }
     }
+  }
+
+  Future<void> _fetchPostCount() async {
+    User? user = _auth.currentUser;
+    if (user == null) return;
+
+    QuerySnapshot postSnapshot = await _firestore
+        .collection('posts')
+        .where('userId', isEqualTo: user.uid) // Ambil hanya post milik user
+        .get();
+
+    setState(() {
+      postCount =
+          postSnapshot.size; // Ambil jumlah dokumen (post) yang dimiliki user
+    });
   }
 
   Future<void> _logout() async {
@@ -179,24 +194,62 @@ class _ProfileFragmentState extends State<ProfileFragment> {
             const Divider(height: 30),
 
             // Grid List Postingan
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: 10, // Jumlah post yang tersedia
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3, // 3 kolom seperti Instagram
-                  crossAxisSpacing: 5,
-                  mainAxisSpacing: 5,
-                ),
-                itemBuilder: (context, index) {
-                  return Container(
-                    color: Colors.grey[300],
-                    child: Center(child: Text("Post ${index + 1}")),
+            StreamBuilder<QuerySnapshot>(
+              stream: _firestore
+                  .collection('posts')
+                  .where('userId', isEqualTo: _auth.currentUser?.uid)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(20),
+                      child: Text("No posts yet"),
+                    ),
                   );
-                },
-              ),
+                }
+
+                var posts = snapshot.data!.docs;
+
+                return Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: posts.length,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3, // 3 kolom seperti Instagram
+                      crossAxisSpacing: 5,
+                      mainAxisSpacing: 5,
+                    ),
+                    itemBuilder: (context, index) {
+                      var post = posts[index];
+                      String? imageUrl =
+                          post['images'].isNotEmpty ? post['images'][0] : null;
+
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          image: imageUrl != null
+                              ? DecorationImage(
+                                  image: NetworkImage(imageUrl),
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
+                        ),
+                        child: imageUrl == null
+                            ? const Center(child: Text("No Image"))
+                            : null,
+                      );
+                    },
+                  ),
+                );
+              },
             ),
           ],
         ),
