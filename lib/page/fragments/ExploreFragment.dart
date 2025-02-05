@@ -1,3 +1,4 @@
+import 'package:asklab/page/SearchPage.dart';
 import 'package:flutter/material.dart';
 
 class ExploreFragment extends StatelessWidget {
@@ -9,6 +10,17 @@ class ExploreFragment extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Explore'),
         backgroundColor: const Color(0xFF009ADB),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SearchPage()),
+              );
+            },
+          ),
+        ],
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(16.0),
