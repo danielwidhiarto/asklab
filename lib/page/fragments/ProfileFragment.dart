@@ -68,9 +68,14 @@ class _ProfileFragmentState extends State<ProfileFragment> {
             // Foto Profil
             CircleAvatar(
               radius: 50,
-              backgroundImage: profilePicture != null
-                  ? NetworkImage(profilePicture!) as ImageProvider
-                  : const AssetImage('assets/profile_picture.png'),
+              backgroundImage:
+                  profilePicture != null && profilePicture!.isNotEmpty
+                      ? NetworkImage(profilePicture!) as ImageProvider
+                      : null,
+              child: profilePicture == null || profilePicture!.isEmpty
+                  ? const Icon(Icons.account_circle,
+                      size: 50, color: Colors.grey)
+                  : null,
             ),
 
             const SizedBox(height: 10),
