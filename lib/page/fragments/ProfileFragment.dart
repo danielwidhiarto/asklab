@@ -1,3 +1,4 @@
+import 'package:asklab/page/DetailPost.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -232,19 +233,36 @@ class _ProfileFragmentState extends State<ProfileFragment> {
                       String? imageUrl =
                           post['images'].isNotEmpty ? post['images'][0] : null;
 
-                      return Container(
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          image: imageUrl != null
-                              ? DecorationImage(
-                                  image: NetworkImage(imageUrl),
-                                  fit: BoxFit.cover,
-                                )
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => DetailPost(
+                                postId: post.id,
+                                title: post['title'],
+                                images: List<String>.from(
+                                    post['images']), // Pastikan ini array
+                                description: post['description'],
+                                timestamp: post['timestamp'], // Tambahkan ini
+                              ),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            image: imageUrl != null
+                                ? DecorationImage(
+                                    image: NetworkImage(imageUrl),
+                                    fit: BoxFit.cover,
+                                  )
+                                : null,
+                          ),
+                          child: imageUrl == null
+                              ? const Center(child: Text("No Image"))
                               : null,
                         ),
-                        child: imageUrl == null
-                            ? const Center(child: Text("No Image"))
-                            : null,
                       );
                     },
                   ),
