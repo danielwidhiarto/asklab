@@ -20,16 +20,12 @@ class _UserProfilePageState extends State<UserProfilePage> {
   String? username;
   String? bio;
   String? profilePicture;
-  int followersCount = 0;
-  int followingCount = 0;
-  int postCount = 0;
   bool isFollowing = false;
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
-    _fetchPostCount();
     _checkIfFollowing();
   }
 
@@ -42,21 +38,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
         username = userDoc['username'];
         bio = userDoc['bio'];
         profilePicture = userDoc['profilePicture'];
-        followersCount = userDoc['followersCount'] ?? 0;
-        followingCount = userDoc['followingCount'] ?? 0;
       });
     }
-  }
-
-  Future<void> _fetchPostCount() async {
-    QuerySnapshot postSnapshot = await _firestore
-        .collection('posts')
-        .where('userId', isEqualTo: widget.userId)
-        .get();
-
-    setState(() {
-      postCount = postSnapshot.size;
-    });
   }
 
   Future<void> _checkIfFollowing() async {
@@ -84,45 +67,24 @@ class _UserProfilePageState extends State<UserProfilePage> {
     DocumentReference currentUserRef =
         _firestore.collection('users').doc(currentUser.uid);
 
-    DocumentSnapshot currentUserDoc = await currentUserRef.get();
-    DocumentSnapshot targetUserDoc = await userRef.get();
-
-    if (!currentUserDoc.exists || !targetUserDoc.exists) return;
-
-    Map<String, dynamic> currentUserData =
-        currentUserDoc.data() as Map<String, dynamic>;
-    Map<String, dynamic> targetUserData =
-        targetUserDoc.data() as Map<String, dynamic>;
-
     if (isFollowing) {
       // 🔻 Unfollow: Hapus dari Firestore
       await userRef.collection('followers').doc(currentUser.uid).delete();
       await currentUserRef.collection('following').doc(widget.userId).delete();
-
-      setState(() {
-        isFollowing = false;
-        followersCount--;
-      });
+      setState(() => isFollowing = false);
     } else {
       // 🔺 Follow: Tambahkan data ke Firestore
       await userRef.collection('followers').doc(currentUser.uid).set({
         "userId": currentUser.uid,
-        "username": currentUserData["username"] ?? "",
-        "profilePicture": currentUserData["profilePicture"] ?? "",
-        "followedAt": FieldValue.serverTimestamp(), // Tambahkan timestamp
+        "followedAt": FieldValue.serverTimestamp(),
       });
 
       await currentUserRef.collection('following').doc(widget.userId).set({
         "userId": widget.userId,
-        "username": targetUserData["username"] ?? "",
-        "profilePicture": targetUserData["profilePicture"] ?? "",
-        "followedAt": FieldValue.serverTimestamp(), // Tambahkan timestamp
+        "followedAt": FieldValue.serverTimestamp(),
       });
 
-      setState(() {
-        isFollowing = true;
-        followersCount++;
-      });
+      setState(() => isFollowing = true);
     }
   }
 
@@ -184,15 +146,47 @@ class _UserProfilePageState extends State<UserProfilePage> {
 
             const SizedBox(height: 15),
 
-            // Statistik User
+            // Statistik User (Menggunakan StreamBuilder agar Real-time)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 30),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  profileInfo("Posts", "$postCount"),
-                  profileInfo("Followers", "$followersCount"),
-                  profileInfo("Following", "$followingCount"),
+                  StreamBuilder<QuerySnapshot>(
+                    stream: _firestore
+                        .collection('posts')
+                        .where('userId', isEqualTo: widget.userId)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      int postCount =
+                          snapshot.hasData ? snapshot.data!.size : 0;
+                      return profileInfo("Posts", "$postCount");
+                    },
+                  ),
+                  StreamBuilder<QuerySnapshot>(
+                    stream: _firestore
+                        .collection('users')
+                        .doc(widget.userId)
+                        .collection('followers')
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      int followersCount =
+                          snapshot.hasData ? snapshot.data!.size : 0;
+                      return profileInfo("Followers", "$followersCount");
+                    },
+                  ),
+                  StreamBuilder<QuerySnapshot>(
+                    stream: _firestore
+                        .collection('users')
+                        .doc(widget.userId)
+                        .collection('following')
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      int followingCount =
+                          snapshot.hasData ? snapshot.data!.size : 0;
+                      return profileInfo("Following", "$followingCount");
+                    },
+                  ),
                 ],
               ),
             ),
@@ -243,65 +237,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
               ),
 
             const Divider(height: 30),
-
-            // Grid Postingan
-            StreamBuilder<QuerySnapshot>(
-              stream: _firestore
-                  .collection('posts')
-                  .where('userId', isEqualTo: widget.userId)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(20),
-                      child: Text("No posts yet"),
-                    ),
-                  );
-                }
-
-                var posts = snapshot.data!.docs;
-                return Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: posts.length,
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      crossAxisSpacing: 5,
-                      mainAxisSpacing: 5,
-                    ),
-                    itemBuilder: (context, index) {
-                      var post = posts[index];
-                      String? imageUrl =
-                          post['images'].isNotEmpty ? post['images'][0] : null;
-
-                      return GestureDetector(
-                        onTap: () => _navigateToPostDetail(post),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                            image: imageUrl != null
-                                ? DecorationImage(
-                                    image: NetworkImage(imageUrl),
-                                    fit: BoxFit.cover)
-                                : null,
-                          ),
-                          child: imageUrl == null
-                              ? const Center(child: Text("No Image"))
-                              : null,
-                        ),
-                      );
-                    },
-                  ),
-                );
-              },
-            ),
           ],
         ),
       ),
