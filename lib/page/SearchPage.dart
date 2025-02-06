@@ -141,6 +141,7 @@ class _SearchPageState extends State<SearchPage> {
                           itemBuilder: (context, index) {
                             final data =
                                 _results[index].data() as Map<String, dynamic>;
+
                             return Container(
                               margin: const EdgeInsets.symmetric(vertical: 8.0),
                               padding: const EdgeInsets.all(16.0),
@@ -157,11 +158,27 @@ class _SearchPageState extends State<SearchPage> {
                                   ),
                                 ],
                               ),
-                              child: Text(
-                                _searchType == 'Posts'
-                                    ? data['title']
-                                    : data['username'],
-                                style: const TextStyle(fontSize: 18.0),
+                              child: Row(
+                                children: [
+                                  if (_searchType == 'Users')
+                                    CircleAvatar(
+                                      radius: 30,
+                                      backgroundImage: data['profilePicture'] !=
+                                              null
+                                          ? NetworkImage(data['profilePicture'])
+                                          : null,
+                                      child: data['profilePicture'] == null
+                                          ? const Icon(Icons.person, size: 30)
+                                          : null,
+                                    ),
+                                  const SizedBox(width: 16),
+                                  Text(
+                                    _searchType == 'Posts'
+                                        ? data['title']
+                                        : data['username'],
+                                    style: const TextStyle(fontSize: 18.0),
+                                  ),
+                                ],
                               ),
                             );
                           },
