@@ -1,3 +1,4 @@
+import 'package:asklab/page/UserProfilePage.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
@@ -142,43 +143,61 @@ class _SearchPageState extends State<SearchPage> {
                             final data =
                                 _results[index].data() as Map<String, dynamic>;
 
-                            return Container(
-                              margin: const EdgeInsets.symmetric(vertical: 8.0),
-                              padding: const EdgeInsets.all(16.0),
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey.shade300),
-                                borderRadius: BorderRadius.circular(10.0),
-                                color: Colors.white,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.grey.withOpacity(0.2),
-                                    spreadRadius: 2,
-                                    blurRadius: 5,
-                                    offset: const Offset(0, 3),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                children: [
-                                  if (_searchType == 'Users')
-                                    CircleAvatar(
-                                      radius: 30,
-                                      backgroundImage: data['profilePicture'] !=
-                                              null
-                                          ? NetworkImage(data['profilePicture'])
-                                          : null,
-                                      child: data['profilePicture'] == null
-                                          ? const Icon(Icons.person, size: 30)
-                                          : null,
+                            return GestureDetector(
+                              onTap: () {
+                                if (_searchType == 'Users') {
+                                  final userId = _results[index]
+                                      .id; // Ambil ID dari Firestore
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          UserProfilePage(userId: userId),
                                     ),
-                                  const SizedBox(width: 16),
-                                  Text(
-                                    _searchType == 'Posts'
-                                        ? data['title']
-                                        : data['username'],
-                                    style: const TextStyle(fontSize: 18.0),
-                                  ),
-                                ],
+                                  );
+                                }
+                              },
+                              child: Container(
+                                margin:
+                                    const EdgeInsets.symmetric(vertical: 8.0),
+                                padding: const EdgeInsets.all(16.0),
+                                decoration: BoxDecoration(
+                                  border:
+                                      Border.all(color: Colors.grey.shade300),
+                                  borderRadius: BorderRadius.circular(10.0),
+                                  color: Colors.white,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.grey.withOpacity(0.2),
+                                      spreadRadius: 2,
+                                      blurRadius: 5,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  children: [
+                                    if (_searchType == 'Users')
+                                      CircleAvatar(
+                                        radius: 30,
+                                        backgroundImage:
+                                            data['profilePicture'] != null
+                                                ? NetworkImage(
+                                                    data['profilePicture'])
+                                                : null,
+                                        child: data['profilePicture'] == null
+                                            ? const Icon(Icons.person, size: 30)
+                                            : null,
+                                      ),
+                                    const SizedBox(width: 16),
+                                    Text(
+                                      _searchType == 'Posts'
+                                          ? data['title']
+                                          : data['username'],
+                                      style: const TextStyle(fontSize: 18.0),
+                                    ),
+                                  ],
+                                ),
                               ),
                             );
                           },
