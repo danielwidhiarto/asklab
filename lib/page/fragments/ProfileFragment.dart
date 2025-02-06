@@ -2,7 +2,8 @@ import 'package:asklab/page/DetailPost.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../EditProfilePage.dart'; // Import Edit Profile Page
+import '';
+import '../EditProfilePage.dart';
 
 class ProfileFragment extends StatefulWidget {
   const ProfileFragment({Key? key}) : super(key: key);
@@ -27,7 +28,7 @@ class _ProfileFragmentState extends State<ProfileFragment> {
   void initState() {
     super.initState();
     _loadUserData();
-    _fetchPostCount(); // Ambil jumlah post dari Firestore
+    _fetchPostCount();
   }
 
   Future<void> _loadUserData() async {
@@ -41,8 +42,8 @@ class _ProfileFragmentState extends State<ProfileFragment> {
           username = userDoc['username'];
           bio = userDoc['bio'];
           profilePicture = userDoc['profilePicture'];
-          followersCount = userDoc['followersCount'];
-          followingCount = userDoc['followingCount'];
+          followersCount = userDoc['followersCount'] ?? 0;
+          followingCount = userDoc['followingCount'] ?? 0;
         });
       }
     }
@@ -54,19 +55,17 @@ class _ProfileFragmentState extends State<ProfileFragment> {
 
     QuerySnapshot postSnapshot = await _firestore
         .collection('posts')
-        .where('userId', isEqualTo: user.uid) // Ambil hanya post milik user
+        .where('userId', isEqualTo: user.uid)
         .get();
 
     setState(() {
-      postCount =
-          postSnapshot.size; // Ambil jumlah dokumen (post) yang dimiliki user
+      postCount = postSnapshot.size;
     });
   }
 
   Future<void> _logout() async {
     await _auth.signOut();
-    Navigator.pushReplacementNamed(
-        context, '/'); // Navigate to login page after logout
+    Navigator.pushReplacementNamed(context, '/');
   }
 
   @override
@@ -81,54 +80,39 @@ class _ProfileFragmentState extends State<ProfileFragment> {
           children: [
             const SizedBox(height: 20),
 
-            // Foto Profil
+            // Avatar Profile dari Cloudinary
             CircleAvatar(
-              radius: 50,
+              radius: 60,
+              backgroundColor: Colors.blueAccent,
               backgroundImage:
-                  profilePicture != null && profilePicture!.isNotEmpty
-                      ? NetworkImage(profilePicture!) as ImageProvider
-                      : null,
-              child: profilePicture == null || profilePicture!.isEmpty
+                  profilePicture != null ? NetworkImage(profilePicture!) : null,
+              child: profilePicture == null
                   ? const Icon(Icons.account_circle,
-                      size: 50, color: Colors.grey)
+                      size: 80, color: Colors.white)
                   : null,
             ),
 
             const SizedBox(height: 10),
 
-            // Full Name
+            // Nama & Username
             if (fullName != null)
-              Text(
-                fullName!,
-                style:
-                    const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
+              Text(fullName!,
+                  style: const TextStyle(
+                      fontSize: 22, fontWeight: FontWeight.bold)),
+            Text('@${username ?? "username"}',
+                style: const TextStyle(fontSize: 16, color: Colors.grey)),
 
-            const SizedBox(height: 5),
+            const SizedBox(height: 15),
 
-            // Username dan Info Posts, Followers, Following
+            // Statistik User
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              padding: const EdgeInsets.symmetric(horizontal: 30),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  // Username
-                  Text(
-                    '@${username ?? "username"}',
-                    style: const TextStyle(fontSize: 16, color: Colors.grey),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  // Info Followers, Following, Posts
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      profileInfo("Posts", "$postCount"),
-                      profileInfo("Followers", "$followersCount"),
-                      profileInfo("Following", "$followingCount"),
-                    ],
-                  ),
+                  profileInfo("Posts", "$postCount"),
+                  profileInfo("Followers", "$followersCount"),
+                  profileInfo("Following", "$followingCount"),
                 ],
               ),
             ),
@@ -141,60 +125,66 @@ class _ProfileFragmentState extends State<ProfileFragment> {
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Text(
                   bio!,
+                  textAlign: TextAlign.center,
                   style: const TextStyle(fontSize: 14, color: Colors.black87),
                 ),
               ),
 
             const SizedBox(height: 20),
 
-            // Tombol Edit Profile & Logout (Modern Style)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ElevatedButton.icon(
-                  onPressed: () {
-                    // Aksi Edit Profile
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const EditProfilePage(),
+            // Tombol Edit Profile & Logout
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const EditProfilePage(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.edit, size: 20),
+                      label: const Text("Edit Profile",
+                          style: TextStyle(fontSize: 16)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blueAccent,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
-                    );
-                  },
-                  icon: const Icon(Icons.edit, size: 18),
-                  label: const Text("Edit Profile"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF009ADB),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                OutlinedButton.icon(
-                  onPressed: _logout,
-                  icon: const Icon(Icons.logout,
-                      size: 18, color: Color(0xFF009ADB)),
-                  label: const Text("Logout",
-                      style: TextStyle(color: Color(0xFF009ADB))),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Color(0xFF009ADB)),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _logout,
+                      icon: const Icon(Icons.logout,
+                          size: 20, color: Colors.blueAccent),
+                      label: const Text("Logout",
+                          style: TextStyle(
+                              fontSize: 16, color: Colors.blueAccent)),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.blueAccent),
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
 
             const Divider(height: 30),
 
-            // Grid List Postingan
+            // Grid Postingan
             StreamBuilder<QuerySnapshot>(
               stream: _firestore
                   .collection('posts')
@@ -204,7 +194,6 @@ class _ProfileFragmentState extends State<ProfileFragment> {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
-
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return const Center(
                     child: Padding(
@@ -215,7 +204,6 @@ class _ProfileFragmentState extends State<ProfileFragment> {
                 }
 
                 var posts = snapshot.data!.docs;
-
                 return Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: GridView.builder(
@@ -224,7 +212,7 @@ class _ProfileFragmentState extends State<ProfileFragment> {
                     itemCount: posts.length,
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3, // 3 kolom seperti Instagram
+                      crossAxisCount: 3,
                       crossAxisSpacing: 5,
                       mainAxisSpacing: 5,
                     ),
@@ -241,17 +229,17 @@ class _ProfileFragmentState extends State<ProfileFragment> {
                               builder: (context) => DetailPost(
                                 postId: post.id,
                                 title: post['title'],
-                                images: List<String>.from(
-                                    post['images']), // Pastikan ini array
+                                images: List<String>.from(post['images']),
                                 description: post['description'],
-                                timestamp: post['timestamp'], // Tambahkan ini
+                                timestamp: post['timestamp'],
                               ),
                             ),
                           );
                         },
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.grey[300],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.shade300),
                             image: imageUrl != null
                                 ? DecorationImage(
                                     image: NetworkImage(imageUrl),
@@ -278,10 +266,8 @@ class _ProfileFragmentState extends State<ProfileFragment> {
   Widget profileInfo(String label, String count) {
     return Column(
       children: [
-        Text(
-          count,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
+        Text(count,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         Text(label, style: const TextStyle(fontSize: 14, color: Colors.grey)),
       ],
     );
