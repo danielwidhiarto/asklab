@@ -104,15 +104,47 @@ class _ProfileFragmentState extends State<ProfileFragment> {
 
             const SizedBox(height: 15),
 
-            // Statistik User
+            // Statistik User (Real-time update dengan StreamBuilder)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 30),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  profileInfo("Posts", "$postCount"),
-                  profileInfo("Followers", "$followersCount"),
-                  profileInfo("Following", "$followingCount"),
+                  StreamBuilder<QuerySnapshot>(
+                    stream: _firestore
+                        .collection('posts')
+                        .where('userId', isEqualTo: _auth.currentUser?.uid)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      int postCount =
+                          snapshot.hasData ? snapshot.data!.size : 0;
+                      return profileInfo("Posts", "$postCount");
+                    },
+                  ),
+                  StreamBuilder<QuerySnapshot>(
+                    stream: _firestore
+                        .collection('users')
+                        .doc(_auth.currentUser?.uid)
+                        .collection('followers')
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      int followersCount =
+                          snapshot.hasData ? snapshot.data!.size : 0;
+                      return profileInfo("Followers", "$followersCount");
+                    },
+                  ),
+                  StreamBuilder<QuerySnapshot>(
+                    stream: _firestore
+                        .collection('users')
+                        .doc(_auth.currentUser?.uid)
+                        .collection('following')
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      int followingCount =
+                          snapshot.hasData ? snapshot.data!.size : 0;
+                      return profileInfo("Following", "$followingCount");
+                    },
+                  ),
                 ],
               ),
             ),
