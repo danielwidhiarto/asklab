@@ -42,8 +42,6 @@ class _ProfileFragmentState extends State<ProfileFragment> {
           username = userDoc['username'];
           bio = userDoc['bio'];
           profilePicture = userDoc['profilePicture'];
-          followersCount = userDoc['followersCount'] ?? 0;
-          followingCount = userDoc['followingCount'] ?? 0;
         });
       }
     }
