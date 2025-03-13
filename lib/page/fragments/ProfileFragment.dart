@@ -2,7 +2,6 @@ import 'package:asklab/page/DetailPost.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '';
 import '../EditProfilePage.dart';
 
 class ProfileFragment extends StatefulWidget {
@@ -20,15 +19,11 @@ class _ProfileFragmentState extends State<ProfileFragment> {
   String? username;
   String? bio;
   String? profilePicture;
-  int followersCount = 0;
-  int followingCount = 0;
-  int postCount = 0;
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
-    _fetchPostCount();
   }
 
   Future<void> _loadUserData() async {
@@ -45,20 +40,6 @@ class _ProfileFragmentState extends State<ProfileFragment> {
         });
       }
     }
-  }
-
-  Future<void> _fetchPostCount() async {
-    User? user = _auth.currentUser;
-    if (user == null) return;
-
-    QuerySnapshot postSnapshot = await _firestore
-        .collection('posts')
-        .where('userId', isEqualTo: user.uid)
-        .get();
-
-    setState(() {
-      postCount = postSnapshot.size;
-    });
   }
 
   Future<void> _logout() async {
@@ -149,72 +130,9 @@ class _ProfileFragmentState extends State<ProfileFragment> {
 
             const SizedBox(height: 20),
 
-            // Bio (jika ada)
-            if (bio != null)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Text(
-                  bio!,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 14, color: Colors.black87),
-                ),
-              ),
-
-            const SizedBox(height: 20),
-
-            // Tombol Edit Profile & Logout
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const EditProfilePage(),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.edit, size: 20),
-                      label: const Text("Edit Profile",
-                          style: TextStyle(fontSize: 16)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blueAccent,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _logout,
-                      icon: const Icon(Icons.logout,
-                          size: 20, color: Colors.blueAccent),
-                      label: const Text("Logout",
-                          style: TextStyle(
-                              fontSize: 16, color: Colors.blueAccent)),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Colors.blueAccent),
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
             const Divider(height: 30),
 
-            // Grid Postingan
+            // ListView untuk menampilkan Post dengan Judul & Deskripsi
             StreamBuilder<QuerySnapshot>(
               stream: _firestore
                   .collection('posts')
@@ -234,56 +152,118 @@ class _ProfileFragmentState extends State<ProfileFragment> {
                 }
 
                 var posts = snapshot.data!.docs;
-                return Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: posts.length,
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      crossAxisSpacing: 5,
-                      mainAxisSpacing: 5,
-                    ),
-                    itemBuilder: (context, index) {
-                      var post = posts[index];
-                      String? imageUrl =
-                          post['images'].isNotEmpty ? post['images'][0] : null;
 
-                      return GestureDetector(
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: posts.length,
+                  itemBuilder: (context, index) {
+                    var post = posts[index];
+                    List<String> images = List<String>.from(post['images']);
+                    String? imageUrl = images.isNotEmpty ? images[0] : null;
+                    String title = post['title'];
+                    String description = post['description'];
+                    Timestamp timestamp = post['timestamp'];
+                    DateTime dateTime = timestamp.toDate();
+
+                    // Format time sesuai preferensi. Tanpa intl, kita bisa bikin format manual sederhana:
+                    String formattedTime =
+                        "${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute}";
+
+                    return Card(
+                      margin: const EdgeInsets.symmetric(
+                          vertical: 8, horizontal: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      elevation: 2,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(10),
                         onTap: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (context) => DetailPost(
                                 postId: post.id,
-                                title: post['title'],
-                                images: List<String>.from(post['images']),
-                                description: post['description'],
-                                timestamp: post['timestamp'],
+                                title: title,
+                                images: images,
+                                description: description,
+                                timestamp: timestamp,
                               ),
                             ),
                           );
                         },
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.grey.shade300),
-                            image: imageUrl != null
-                                ? DecorationImage(
-                                    image: NetworkImage(imageUrl),
-                                    fit: BoxFit.cover,
-                                  )
-                                : null,
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Thumbnail / Leading
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: imageUrl != null
+                                    ? Image.network(
+                                        imageUrl,
+                                        width: 80,
+                                        height: 80,
+                                        fit: BoxFit.cover,
+                                      )
+                                    : Container(
+                                        width: 80,
+                                        height: 80,
+                                        color: Colors.grey.shade200,
+                                        child: const Icon(
+                                          Icons.image_not_supported_outlined,
+                                          size: 40,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                              ),
+                              const SizedBox(width: 10),
+                              // Bagian judul, deskripsi, timestamp
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      title,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      description.length > 100
+                                          ? description.substring(0, 100) +
+                                              '...'
+                                          : description,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      formattedTime,
+                                      style: const TextStyle(
+                                          fontSize: 12, color: Colors.grey),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              // Trailing icon
+                              const Icon(
+                                Icons.arrow_forward_ios,
+                                size: 16,
+                                color: Colors.grey,
+                              ),
+                              const SizedBox(width: 4),
+                            ],
                           ),
-                          child: imageUrl == null
-                              ? const Center(child: Text("No Image"))
-                              : null,
                         ),
-                      );
-                    },
-                  ),
+                      ),
+                    );
+                  },
                 );
               },
             ),
