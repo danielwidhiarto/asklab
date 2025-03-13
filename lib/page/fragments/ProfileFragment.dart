@@ -57,7 +57,7 @@ class _ProfileFragmentState extends State<ProfileFragment> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
 
             // Avatar Profile dari Cloudinary
             CircleAvatar(
@@ -75,11 +75,29 @@ class _ProfileFragmentState extends State<ProfileFragment> {
 
             // Nama & Username
             if (fullName != null)
-              Text(fullName!,
-                  style: const TextStyle(
-                      fontSize: 22, fontWeight: FontWeight.bold)),
-            Text('@${username ?? "username"}',
-                style: const TextStyle(fontSize: 16, color: Colors.grey)),
+              Text(
+                fullName!,
+                style:
+                    const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+            const SizedBox(height: 10),
+            Text(
+              '@${username ?? "username"}',
+              style: const TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+
+            const SizedBox(height: 10),
+
+            // Bio (jika ada)
+            if (bio != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Text(
+                  bio!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 14, color: Colors.black87),
+                ),
+              ),
 
             const SizedBox(height: 15),
 
@@ -89,6 +107,7 @@ class _ProfileFragmentState extends State<ProfileFragment> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
+                  // Posts
                   StreamBuilder<QuerySnapshot>(
                     stream: _firestore
                         .collection('posts')
@@ -100,6 +119,7 @@ class _ProfileFragmentState extends State<ProfileFragment> {
                       return profileInfo("Posts", "$postCount");
                     },
                   ),
+                  // Followers
                   StreamBuilder<QuerySnapshot>(
                     stream: _firestore
                         .collection('users')
@@ -112,6 +132,7 @@ class _ProfileFragmentState extends State<ProfileFragment> {
                       return profileInfo("Followers", "$followersCount");
                     },
                   ),
+                  // Following
                   StreamBuilder<QuerySnapshot>(
                     stream: _firestore
                         .collection('users')
@@ -128,11 +149,68 @@ class _ProfileFragmentState extends State<ProfileFragment> {
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 15),
+
+            // Tombol Edit Profile & Logout
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const EditProfilePage(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.edit, size: 20),
+                      label: const Text(
+                        "Edit Profile",
+                        style: TextStyle(fontSize: 16),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blueAccent,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _logout,
+                      icon: const Icon(
+                        Icons.logout,
+                        size: 20,
+                        color: Colors.blueAccent,
+                      ),
+                      label: const Text(
+                        "Logout",
+                        style:
+                            TextStyle(fontSize: 16, color: Colors.blueAccent),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.blueAccent),
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
             const Divider(height: 30),
 
-            // ListView untuk menampilkan Post dengan Judul & Deskripsi
+            // ListView menampilkan Post (thumbnail + judul + deskripsi + timestamp)
             StreamBuilder<QuerySnapshot>(
               stream: _firestore
                   .collection('posts')
@@ -152,7 +230,6 @@ class _ProfileFragmentState extends State<ProfileFragment> {
                 }
 
                 var posts = snapshot.data!.docs;
-
                 return ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -166,9 +243,10 @@ class _ProfileFragmentState extends State<ProfileFragment> {
                     Timestamp timestamp = post['timestamp'];
                     DateTime dateTime = timestamp.toDate();
 
-                    // Format time sesuai preferensi. Tanpa intl, kita bisa bikin format manual sederhana:
+                    // Format waktu sederhana tanpa intl
                     String formattedTime =
-                        "${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute}";
+                        "${dateTime.day}/${dateTime.month}/${dateTime.year} "
+                        "${dateTime.hour}:${dateTime.minute}";
 
                     return Card(
                       margin: const EdgeInsets.symmetric(
@@ -235,8 +313,7 @@ class _ProfileFragmentState extends State<ProfileFragment> {
                                     const SizedBox(height: 4),
                                     Text(
                                       description.length > 100
-                                          ? description.substring(0, 100) +
-                                              '...'
+                                          ? "${description.substring(0, 100)}..."
                                           : description,
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
@@ -245,7 +322,9 @@ class _ProfileFragmentState extends State<ProfileFragment> {
                                     Text(
                                       formattedTime,
                                       style: const TextStyle(
-                                          fontSize: 12, color: Colors.grey),
+                                        fontSize: 12,
+                                        color: Colors.grey,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -276,9 +355,14 @@ class _ProfileFragmentState extends State<ProfileFragment> {
   Widget profileInfo(String label, String count) {
     return Column(
       children: [
-        Text(count,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        Text(label, style: const TextStyle(fontSize: 14, color: Colors.grey)),
+        Text(
+          count,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 14, color: Colors.grey),
+        ),
       ],
     );
   }
