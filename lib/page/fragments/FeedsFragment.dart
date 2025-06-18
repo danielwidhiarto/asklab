@@ -1,8 +1,33 @@
+import 'package:asklab/page/DetailPost.dart';
+import 'package:asklab/page/model/Feed.dart';
 import 'package:flutter/material.dart';
 import '../NotificationPage.dart'; // Import the NotificationPage
 
-class FeedsFragment extends StatelessWidget {
+class FeedsFragment extends StatefulWidget {
   const FeedsFragment({Key? key}) : super(key: key);
+
+  @override
+  State<FeedsFragment> createState() => _FeedsFragmentState();
+}
+
+class _FeedsFragmentState extends State<FeedsFragment> {
+
+  List<Feed> feedsList = [];
+
+  @override
+  void initState() {
+    super.initState();
+    fetchFeeds();
+  }
+
+  void fetchFeeds() async {
+    FeedApi feedApi = FeedApi();
+    List <Feed> feeds = await feedApi.fetchFeeds();
+
+    setState(() {
+      feedsList = feeds;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,8 +52,11 @@ class FeedsFragment extends StatelessWidget {
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(16.0),
-        itemCount: 3, // Replace with your dynamic post count
+        itemCount: feedsList.length, // Replace with your dynamic post count
         itemBuilder: (context, index) {
+
+          final feed = feedsList[index];
+
           return Padding(
             padding: const EdgeInsets.only(bottom: 16.0),
             child: Card(
@@ -44,24 +72,24 @@ class FeedsFragment extends StatelessWidget {
                     Row(
                       children: [
                         const CircleAvatar(
-                          backgroundImage: NetworkImage(
-                              'https://via.placeholder.com/50'), // Replace with user avatar
+                          backgroundImage: AssetImage(
+                              'assets/images/avatar_placeholder.png'), // Replace with user avatar
                           radius: 20,
                         ),
                         const SizedBox(width: 12.0),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
+                          children: [
                             Text(
-                              'Flutter Error: Exception', // Replace with post title
-                              style: TextStyle(
+                              feed.title, // Replace with post title
+                              style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16.0,
                               ),
                             ),
                             Text(
-                              'by dre', // Replace with author name
-                              style: TextStyle(
+                              "${feed.username}", // Replace with author name
+                              style: const TextStyle(
                                 color: Colors.grey,
                                 fontSize: 14.0,
                               ),
@@ -72,6 +100,14 @@ class FeedsFragment extends StatelessWidget {
                         TextButton(
                           onPressed: () {
                             // Implement detail functionality
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => DetailPost(
+                              postId: feed.feedId, 
+                              title: feed.title, 
+                              images: feed.images, 
+                              description: feed.description, 
+                              timestamp: feed.timestamp)));
+
+                              fetchFeeds();
                           },
                           child: Row(
                             children: const [
@@ -90,8 +126,8 @@ class FeedsFragment extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 8.0),
-                    const Text(
-                      'When I turn on function and called which have automation math processing',
+                    Text(
+                      "${feed.description}",
                       style: TextStyle(fontSize: 14.0, color: Colors.black87),
                     ),
                     const SizedBox(height: 8.0),
@@ -101,8 +137,23 @@ class FeedsFragment extends StatelessWidget {
                         Expanded(
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8.0),
-                            child: Image.network(
-                              'https://via.placeholder.com/150', // Replace with post image
+                            child: feed.images.isNotEmpty ? Image.network(
+                              feed.images.first, // Replace with post image
+                              height: 100,
+                              fit: BoxFit.cover,
+                              loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return Center(
+                                  child: CircularProgressIndicator(
+                                    value: loadingProgress.expectedTotalBytes != null
+                                        ? loadingProgress.cumulativeBytesLoaded /
+                                            (loadingProgress.expectedTotalBytes ?? 1)
+                                        : null,
+                                  ),
+                                );
+                              },
+                            ) : Image.asset(
+                              'assets/images/placeholder.png',
                               height: 100,
                               fit: BoxFit.cover,
                             ),

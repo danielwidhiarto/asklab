@@ -12,7 +12,7 @@ class DetailPost extends StatefulWidget {
   final String title;
   final List<String> images;
   final String description;
-  final Timestamp timestamp;
+  final DateTime timestamp;
 
   const DetailPost({
     Key? key,
@@ -34,6 +34,8 @@ class _DetailPostState extends State<DetailPost> {
   File? _selectedImage;
   String? _replyToCommentId; // Untuk menyimpan commentId jika sedang reply
   bool _isLoading = false;
+  String _title = '';
+  String _description = '';
 
   // Inisialisasi Cloudinary
   final cloudinary = Cloudinary.signedConfig(
@@ -43,9 +45,15 @@ class _DetailPostState extends State<DetailPost> {
   );
 
   // Format Timestamp ke format yang lebih mudah dibaca
-  String formatTimestamp(Timestamp timestamp) {
-    DateTime dateTime = timestamp.toDate();
+  String formatTimestamp(DateTime dateTime) {
     return "${dateTime.day}-${dateTime.month}-${dateTime.year} ${dateTime.hour}:${dateTime.minute}";
+  }
+
+  @override
+  void initState(){
+    super.initState();
+    _title = widget.title;
+    _description = widget.description;
   }
 
   // Upload Gambar ke Cloudinary
@@ -202,16 +210,103 @@ class _DetailPostState extends State<DetailPost> {
     );
   }
 
+  void _deletePost() async {
+  await _firestore.collection('posts').doc(widget.postId).delete();
+  Navigator.pop(context); // Kembali ke page sebelumnya setelah delete
+}
+
+void _showEditPostDialog() {
+  TextEditingController titleController = TextEditingController(text: widget.title);
+  TextEditingController descriptionController = TextEditingController(text: widget.description);
+
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text("Edit Post"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleController,
+              decoration: const InputDecoration(labelText: "Title"),
+            ),
+            TextField(
+              controller: descriptionController,
+              decoration: const InputDecoration(labelText: "Description"),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await _firestore.collection('posts').doc(widget.postId).update({
+                'title': titleController.text,
+                'description': descriptionController.text,
+              });
+              Navigator.pop(context);
+              setState(() {
+                // Update tampilan DetailPost setelah edit
+              });
+            },
+            child: const Text("Save"),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        title: Text(_title),
         backgroundColor: const Color(0xFF009ADB),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'edit'){
+                _showEditPostDialog();
+              } else if (value == 'delete'){
+                _deletePost();
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'edit',
+                child: Row(
+                  children: [
+                    Icon(Icons.edit, color: Colors.black54),
+                    SizedBox(width: 8),
+                    Text("Edit Post"),
+                  ],
+                )
+              ),
+              PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete, color: Colors.red,),
+                    Text("Delete Post"),
+                    SizedBox(width: 8)
+                  ],
+                )
+              )
+            ]
+          )
+        ],
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -252,7 +347,7 @@ class _DetailPostState extends State<DetailPost> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Text(
-              widget.description,
+              _description,
               style: const TextStyle(fontSize: 16),
             ),
           ),
@@ -289,6 +384,7 @@ class _DetailPostState extends State<DetailPost> {
                       ),
                       title: Text(commentData['username'] ?? "Unknown",
                           style: const TextStyle(fontWeight: FontWeight.bold)),
+                     
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -303,7 +399,7 @@ class _DetailPostState extends State<DetailPost> {
                           Text(commentData['comment']),
                           Text(
                             commentData['timestamp'] != null
-                                ? formatTimestamp(commentData['timestamp'])
+                                ? formatTimestamp((commentData['timestamp'] as Timestamp).toDate())
                                 : "Just now",
                             style: const TextStyle(
                                 fontSize: 12, color: Colors.grey),

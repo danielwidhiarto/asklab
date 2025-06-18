@@ -1,4 +1,7 @@
+import 'package:asklab/page/DetailPost.dart';
 import 'package:asklab/page/UserProfilePage.dart';
+import 'package:asklab/page/model/Feed.dart';
+import 'package:asklab/page/model/Search.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
@@ -13,7 +16,7 @@ class SearchPage extends StatefulWidget {
 class _SearchPageState extends State<SearchPage> {
   String _searchType = 'Posts';
   final TextEditingController _searchController = TextEditingController();
-  final FirestoreService _firestoreService = FirestoreService();
+  final SearchApi _searchApi = SearchApi();
   List<DocumentSnapshot> _results = [];
   bool _isLoading = false;
   Timer? _debounce;
@@ -53,8 +56,7 @@ class _SearchPageState extends State<SearchPage> {
     }
 
     try {
-      List<DocumentSnapshot> results =
-          await _firestoreService.search(_searchType, query);
+      final results = await _searchApi.search(_searchType, query);
       setState(() {
         _results = results;
         _isLoading = false;
@@ -107,6 +109,7 @@ class _SearchPageState extends State<SearchPage> {
             ),
             const SizedBox(height: 20),
             TextField(
+              onChanged: (_) => _search(),
               controller: _searchController,
               decoration: InputDecoration(
                 hintText: 'Search for ${_searchType.toLowerCase()}...',
@@ -155,6 +158,15 @@ class _SearchPageState extends State<SearchPage> {
                                           UserProfilePage(userId: userId),
                                     ),
                                   );
+                                } else if (_searchType == 'Posts') {
+                                  Feed feed = Feed.fromDocument(_results[index]);
+
+                                  Navigator.push(context, MaterialPageRoute(builder: (_) => DetailPost(
+                                    postId: feed.feedId,
+                                    title: feed.title,
+                                    images: feed.images, 
+                                    description: feed.description, 
+                                    timestamp: feed.timestamp)));
                                 }
                               },
                               child: Container(

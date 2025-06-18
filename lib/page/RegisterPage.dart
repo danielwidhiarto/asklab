@@ -42,11 +42,23 @@ class _RegisterPageState extends State<RegisterPage> {
         return;
       }
 
+      var checkUser = await _firestore
+          .collection('users')
+          .where('username', isEqualTo: username)
+          .limit(1).get();
+
       UserCredential userCredential =
           await _auth.createUserWithEmailAndPassword(
         email: email,
         password: _passwordController.text,
       );
+
+      if (checkUser.docs.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Username already exists')),
+        );
+        return;
+      }
 
       await _firestore.collection('users').doc(userCredential.user?.uid).set({
         'email': email,
@@ -58,6 +70,12 @@ class _RegisterPageState extends State<RegisterPage> {
         'followingCount': 0,
         'postCount': 0,
         'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      await _firestore.collection("users").doc(userCredential.user?.uid).
+      collection("followers_following").doc(userCredential.user?.uid).set({
+        'followers': [],
+        'following': []
       });
 
       Navigator.pop(context);
