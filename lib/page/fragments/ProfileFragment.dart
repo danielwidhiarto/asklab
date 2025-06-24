@@ -240,8 +240,8 @@ class _ProfileFragmentState extends State<ProfileFragment> {
                     String? imageUrl = images.isNotEmpty ? images[0] : null;
                     String title = post['title'];
                     String description = post['description'];
-                    DateTime timestamp = post['timestamp'];
-                    DateTime dateTime = timestamp;
+                    Timestamp firebaseTimestamp = post['timestamp'];
+                    DateTime dateTime = firebaseTimestamp.toDate();
 
                     // Format waktu sederhana tanpa intl
                     String formattedTime =
@@ -266,7 +266,7 @@ class _ProfileFragmentState extends State<ProfileFragment> {
                                 title: title,
                                 images: images,
                                 description: description,
-                                timestamp: timestamp,
+                                timestamp: firebaseTimestamp.toDate(),
                               ),
                             ),
                           );
