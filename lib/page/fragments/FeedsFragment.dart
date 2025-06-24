@@ -2,6 +2,8 @@ import 'package:asklab/page/DetailPost.dart';
 import 'package:asklab/page/model/Feed.dart';
 import 'package:flutter/material.dart';
 import '../NotificationPage.dart'; // Import the NotificationPage
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class FeedsFragment extends StatefulWidget {
   const FeedsFragment({Key? key}) : super(key: key);
@@ -11,21 +13,41 @@ class FeedsFragment extends StatefulWidget {
 }
 
 class _FeedsFragmentState extends State<FeedsFragment> {
-
   List<Feed> feedsList = [];
+  List<String> followingList = [];
 
   @override
   void initState() {
     super.initState();
+    fetchFollowing();
     fetchFeeds();
+  }
+
+  void fetchFollowing() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('following')
+          .get();
+
+      setState(() {
+        followingList = snapshot.docs.map((doc) => doc.id).toList();
+      });
+    }
   }
 
   void fetchFeeds() async {
     FeedApi feedApi = FeedApi();
-    List <Feed> feeds = await feedApi.fetchFeeds();
+    List<Feed> feeds = await feedApi.fetchFeeds();
 
+    User? user = FirebaseAuth.instance.currentUser;
     setState(() {
-      feedsList = feeds;
+      feedsList = feeds
+          .where((feed) =>
+              followingList.contains(feed.userId) || feed.userId == user?.uid)
+          .toList();
     });
   }
 
@@ -54,7 +76,6 @@ class _FeedsFragmentState extends State<FeedsFragment> {
         padding: const EdgeInsets.all(16.0),
         itemCount: feedsList.length, // Replace with your dynamic post count
         itemBuilder: (context, index) {
-
           final feed = feedsList[index];
 
           return Padding(
@@ -100,14 +121,17 @@ class _FeedsFragmentState extends State<FeedsFragment> {
                         TextButton(
                           onPressed: () {
                             // Implement detail functionality
-                            Navigator.push(context, MaterialPageRoute(builder: (context) => DetailPost(
-                              postId: feed.feedId, 
-                              title: feed.title, 
-                              images: feed.images, 
-                              description: feed.description, 
-                              timestamp: feed.timestamp)));
+                            Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => DetailPost(
+                                        postId: feed.feedId,
+                                        title: feed.title,
+                                        images: feed.images,
+                                        description: feed.description,
+                                        timestamp: feed.timestamp)));
 
-                              fetchFeeds();
+                            fetchFeeds();
                           },
                           child: Row(
                             children: const [
@@ -137,26 +161,36 @@ class _FeedsFragmentState extends State<FeedsFragment> {
                         Expanded(
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8.0),
-                            child: feed.images.isNotEmpty ? Image.network(
-                              feed.images.first, // Replace with post image
-                              height: 100,
-                              fit: BoxFit.cover,
-                              loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return Center(
-                                  child: CircularProgressIndicator(
-                                    value: loadingProgress.expectedTotalBytes != null
-                                        ? loadingProgress.cumulativeBytesLoaded /
-                                            (loadingProgress.expectedTotalBytes ?? 1)
-                                        : null,
+                            child: feed.images.isNotEmpty
+                                ? Image.network(
+                                    feed.images
+                                        .first, // Replace with post image
+                                    height: 100,
+                                    fit: BoxFit.cover,
+                                    loadingBuilder: (BuildContext context,
+                                        Widget child,
+                                        ImageChunkEvent? loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return Center(
+                                        child: CircularProgressIndicator(
+                                          value: loadingProgress
+                                                      .expectedTotalBytes !=
+                                                  null
+                                              ? loadingProgress
+                                                      .cumulativeBytesLoaded /
+                                                  (loadingProgress
+                                                          .expectedTotalBytes ??
+                                                      1)
+                                              : null,
+                                        ),
+                                      );
+                                    },
+                                  )
+                                : Image.asset(
+                                    'assets/images/placeholder.png',
+                                    height: 100,
+                                    fit: BoxFit.cover,
                                   ),
-                                );
-                              },
-                            ) : Image.asset(
-                              'assets/images/placeholder.png',
-                              height: 100,
-                              fit: BoxFit.cover,
-                            ),
                           ),
                         ),
                         const SizedBox(width: 8.0),
