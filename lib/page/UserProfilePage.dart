@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'DetailPost.dart';
 import 'FollowersFollowingPage.dart';
+import 'fragments/DMFragment.dart';
 
 class UserProfilePage extends StatefulWidget {
   final String userId;
@@ -89,9 +90,61 @@ class _UserProfilePageState extends State<UserProfilePage> {
     }
   }
 
-  void _sendMessage() {
-    // Navigasi ke chat (sesuai kebutuhan)
-    print("Navigating to chat with ${widget.userId}");
+  Future<void> _sendMessage() async {
+    User? currentUser = _auth.currentUser;
+    if (currentUser == null) return;
+
+    // Cek apakah sudah ada chat room dengan user ini
+    final chatRoomsQuery = await _firestore
+        .collection('chatRooms')
+        .where('participants', arrayContains: currentUser.uid)
+        .get();
+
+    String? existingChatRoomId;
+
+    // Cari chat room yang sudah ada
+    for (var doc in chatRoomsQuery.docs) {
+      List<String> participants = List<String>.from(doc['participants']);
+      if (participants.contains(widget.userId)) {
+        existingChatRoomId = doc.id;
+        break;
+      }
+    }
+
+    // Buat UserModel untuk user yang akan di-chat
+    final userDoc =
+        await _firestore.collection('users').doc(widget.userId).get();
+    final otherUser = UserModel.fromFirestore(userDoc);
+
+    String chatRoomId;
+
+    if (existingChatRoomId != null) {
+      // Gunakan chat room yang sudah ada
+      chatRoomId = existingChatRoomId;
+    } else {
+      // Buat chat room baru
+      final newRoom = await _firestore.collection('chatRooms').add({
+        'participants': [currentUser.uid, widget.userId],
+        'lastMessage': '',
+        'lastMessageTime': FieldValue.serverTimestamp(),
+        'unreadCount': {
+          currentUser.uid: 0,
+          widget.userId: 0,
+        },
+      });
+      chatRoomId = newRoom.id;
+    }
+
+    // Navigate ke ChatScreen
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChatScreen(
+          chatRoomId: chatRoomId,
+          otherUser: otherUser,
+        ),
+      ),
+    );
   }
 
   void _navigateToFollowersFollowing(String type) {
