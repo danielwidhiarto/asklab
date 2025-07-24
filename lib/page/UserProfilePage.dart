@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'DetailPost.dart';
+import 'FollowersFollowingPage.dart';
 
 class UserProfilePage extends StatefulWidget {
   final String userId;
@@ -93,6 +94,21 @@ class _UserProfilePageState extends State<UserProfilePage> {
     print("Navigating to chat with ${widget.userId}");
   }
 
+  void _navigateToFollowersFollowing(String type) {
+    if (username != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => FollowersFollowingPage(
+            userId: widget.userId,
+            initialTab: type,
+            userName: username!,
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     User? currentUser = _auth.currentUser;
@@ -163,7 +179,10 @@ class _UserProfilePageState extends State<UserProfilePage> {
                     builder: (context, snapshot) {
                       int followersCount =
                           snapshot.hasData ? snapshot.data!.size : 0;
-                      return profileInfo("Followers", "$followersCount");
+                      return GestureDetector(
+                        onTap: () => _navigateToFollowersFollowing('followers'),
+                        child: profileInfo("Followers", "$followersCount"),
+                      );
                     },
                   ),
                   // Following count
@@ -176,7 +195,10 @@ class _UserProfilePageState extends State<UserProfilePage> {
                     builder: (context, snapshot) {
                       int followingCount =
                           snapshot.hasData ? snapshot.data!.size : 0;
-                      return profileInfo("Following", "$followingCount");
+                      return GestureDetector(
+                        onTap: () => _navigateToFollowersFollowing('following'),
+                        child: profileInfo("Following", "$followingCount"),
+                      );
                     },
                   ),
                 ],
@@ -379,17 +401,24 @@ class _UserProfilePageState extends State<UserProfilePage> {
 
   // Widget info stat
   Widget profileInfo(String label, String count) {
-    return Column(
-      children: [
-        Text(
-          count,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 14, color: Colors.grey),
-        ),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        color: Colors.transparent,
+      ),
+      child: Column(
+        children: [
+          Text(
+            count,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 14, color: Colors.grey),
+          ),
+        ],
+      ),
     );
   }
 

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../EditProfilePage.dart';
+import '../FollowersFollowingPage.dart';
 
 class ProfileFragment extends StatefulWidget {
   const ProfileFragment({Key? key}) : super(key: key);
@@ -45,6 +46,21 @@ class _ProfileFragmentState extends State<ProfileFragment> {
   Future<void> _logout() async {
     await _auth.signOut();
     Navigator.pushReplacementNamed(context, '/');
+  }
+
+  void _navigateToFollowersFollowing(String type) {
+    if (_auth.currentUser != null && username != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => FollowersFollowingPage(
+            userId: _auth.currentUser!.uid,
+            initialTab: type,
+            userName: username!,
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -129,7 +145,10 @@ class _ProfileFragmentState extends State<ProfileFragment> {
                     builder: (context, snapshot) {
                       int followersCount =
                           snapshot.hasData ? snapshot.data!.size : 0;
-                      return profileInfo("Followers", "$followersCount");
+                      return GestureDetector(
+                        onTap: () => _navigateToFollowersFollowing('followers'),
+                        child: profileInfo("Followers", "$followersCount"),
+                      );
                     },
                   ),
                   // Following
@@ -142,7 +161,10 @@ class _ProfileFragmentState extends State<ProfileFragment> {
                     builder: (context, snapshot) {
                       int followingCount =
                           snapshot.hasData ? snapshot.data!.size : 0;
-                      return profileInfo("Following", "$followingCount");
+                      return GestureDetector(
+                        onTap: () => _navigateToFollowersFollowing('following'),
+                        child: profileInfo("Following", "$followingCount"),
+                      );
                     },
                   ),
                 ],
@@ -353,17 +375,24 @@ class _ProfileFragmentState extends State<ProfileFragment> {
   }
 
   Widget profileInfo(String label, String count) {
-    return Column(
-      children: [
-        Text(
-          count,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 14, color: Colors.grey),
-        ),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        color: Colors.transparent,
+      ),
+      child: Column(
+        children: [
+          Text(
+            count,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 14, color: Colors.grey),
+          ),
+        ],
+      ),
     );
   }
 }
